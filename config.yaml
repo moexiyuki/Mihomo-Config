@@ -1,5 +1,7 @@
 # 该配置由本人查看文档、参考他人配置以及个人需求编辑，难免有不合理之处，如果你对该配置有什么建议或意见还请指出，我会及时修改，争取做一个适合大部分人使用的懒人配置
-# Telegram channel @ksc666
+# 复刻自: @huLter 的 mihomo
+# 适配 @taamarin 的 box for magisk 模块
+
 # 大部分配置 参考 @CHIZI-0618 的 box4magisk
 # 该配置你只需要修改 proxy-providers 订阅部分即可直接跑起来
 # 该配置已在 Android（Magisk）、Windows 平台测试通过
@@ -8,9 +10,9 @@
 
 # http-port: 7890 # HTTP(S) 代理端口
 # socks-port: 7892 # SOCKS5 代理端口
-mixed-port: 1080 # HTTP(S) 和 SOCKS 代理混合端口
-redir-port: 7891 # redirect 透明代理端口，仅能代理 TCP 流量，仅适用于 Linux 以及 macOS 使用
-tproxy-port: 1536 # tproxy 透明代理端口，可以代理 TCP 以及 UDP 流量，仅限 linux 适用 (Android 设备属于 Linux 设备）
+mixed-port: 7899 # HTTP(S) 和 SOCKS 代理混合端口
+redir-port: 9797 # redirect 透明代理端口，仅能代理 TCP 流量，仅适用于 Linux 以及 macOS 使用
+tproxy-port: 9898 # tproxy 透明代理端口，可以代理 TCP 以及 UDP 流量，仅限 linux 适用 (Android 设备属于 Linux 设备）
 
 mode: rule # 运行模式：rule 规则匹配；global 全局代理(需要在GLOBAL策略组选择代理/策略)；direct 全局直连
 find-process-mode: strict # 进程匹配模式：always 开启，强制匹配所有进程；；strict 默认，由 Clash 判断是否开启；off 不匹配进程，推荐在路由器上使用此模式
@@ -19,7 +21,7 @@ global-ua: clash.meta # 自定义外部资源下载时使用的UA,默认为 clas
 log-level: error # 日志级别：silent 静默，不输出；error 仅输出发生错误至无法使用的日志；warning 输出发生错误但不影响运行的日志，以及 error 级别内容；info 输出一般运行的内容，以及 error 和 warning 级别的日志；debug 尽可能的输出运行中所有的信息
 allow-lan: true # 允许局域网内其他设备经过 Clash 的代理端口访问互联网，可选值 true/false
 bind-address: "*" # 绑定 IP, 通过 LAN 访问一个/一些特定的 IP 地址，"*" 绑定所有 IP 地址，默认值，不填写此项则绑定全部
-ipv6: true # 是否允许内核接受 IPv6 流量，可选值 true/false
+ipv6: false # 是否允许内核接受 IPv6 流量，可选值 true/false
 tcp-concurrent: true # tcp并发，允许同时处理多个tcp连接，可选值 true/false
 keep-alive-interval: 30 # TCP Keep Alive 间隔,单位分钟 | 控制 Clash 发出 TCP Keep Alive 包的间隔,减少移动设备耗电问题的临时措施
 unified-delay: true # 统一延迟，更换延迟计算方式,去除握手等额外延迟 可选值 true/false
@@ -39,32 +41,32 @@ geox-url: # 自定义 GEO 文件下载地址
 # 外部控制 (API)
 external-controller: 127.0.0.1:9090 # 外部控制器，可以使用 RESTful API 来控制你的 Clash 内核；API 监听地址，你可以将 127.0.0.1 修改为 0.0.0.0 来监听所有 IP；访问地址：http://127.0.0.1:9090
 # external-controller-tls: 127.0.0.1:9443 # HTTPS-API 监听地址，需要配置 tls 部分证书和其私钥配置，使用 TLS 也必须填写 external-controller
-secret: "ksc666" # API 的访问密钥
-external-ui: "./ui" # 外部用户界面路径，可以为绝对路径，或者 Clash 工作目录的相对路径
-external-ui-name: "metacubexd" # 自定义外部用户界面名字
+secret: "meta" # API 的访问密钥
+external-ui: "/data/adb/box/clash" # "./ui" # 外部用户界面路径，可以为绝对路径，或者 Clash 工作目录的相对路径
+external-ui-name: "dashboard" # 自定义外部用户界面名字
 external-ui-url: "https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip" # 自定义外部用户界面下载地址
 
 profile: # 缓存
   store-selected: true # 储存 API 对策略组的选择，以供下次启动时使用
-  store-fake-ip: true # 储存 fakeip 映射表，域名再次发生连接时，使用原有映射地址
+  store-fake-ip: false # 储存 fakeip 映射表，域名再次发生连接时，使用原有映射地址
 
-sniffer: # 域名嗅器,通过读取握手包内的域名字段,将IP还原成域名,有效解决Mapping机制的短板
-  enable: true
-  force-dns-mapping: true # 对 redir-host 类型识别的流量进行强制嗅探
-  parse-pure-ip: true # 对所有未获取到域名的流量进行强制嗅探
-  override-destination: true # 是否使用嗅探结果作为实际访问,默认为 true
-  sniff:
-    HTTP:
-      ports: [80, 8080-8880]
-      override-destination: true # 可覆盖 sniffer.override-destination
-    TLS:
-      ports: [443, 8443]
-    QUIC:
-      ports: [443, 8443]
-  force-domain: # 需要强制嗅探的域名（默认情况下只对IP进行嗅探）
-    - "+.v2ex.com"
-  skip-domain: # 需要跳过嗅探的域名。主要解决部分站点sni字段非域名，导致嗅探结果异常的问题，如米家设备
-    - "Mijia Cloud"
+# sniffer: # 域名嗅器,通过读取握手包内的域名字段,将IP还原成域名,有效解决Mapping机制的短板
+  # enable: true
+  # force-dns-mapping: true # 对 redir-host 类型识别的流量进行强制嗅探
+  # parse-pure-ip: true # 对所有未获取到域名的流量进行强制嗅探
+  # override-destination: true # 是否使用嗅探结果作为实际访问,默认为 true
+  # sniff:
+    # HTTP:
+      # ports: [80, 8080-8880]
+      # override-destination: true # 可覆盖 sniffer.override-destination
+    # TLS:
+      # ports: [443, 8443]
+    # QUIC:
+      # ports: [443, 8443]
+  # force-domain: # 需要强制嗅探的域名（默认情况下只对IP进行嗅探）
+    # - "+.v2ex.com"
+  # skip-domain: # 需要跳过嗅探的域名。主要解决部分站点sni字段非域名，导致嗅探结果异常的问题，如米家设备
+    # - "Mijia Cloud"
 
 tun:
   enable: false # 是否启用,可选 true/false
@@ -74,7 +76,7 @@ tun:
   dns-hijack: # dns 劫持，将匹配到的连接导入内部 dns 模块，不书写协议则为 udp://
     - "any:53"
     
-  device: Meta # 指定 tun 网卡名称,MacOS 设备只能使用 utun 开头的网卡名
+  device: tun_meta # 指定 tun 网卡名称,MacOS 设备只能使用 utun 开头的网卡名
   mtu: 9000 # 最大传输单元，会影响极限状态下的速率，一般用户默认即可。
   strict-route: false # 严格路由，所有连接路由到 tun 来防止泄漏,但设备将无法被其他设备访问
   gso: true # 启用通用分段卸载,仅支持 Linux
@@ -90,14 +92,14 @@ dns:
   enable: true
   prefer-h3: true #优先使用 DOH 的 http/3
   listen: 0.0.0.0:1053
-  ipv6: true
+  ipv6: false
   ipv6-timeout: 300 #ipv6超时，单位 毫秒
   cache-algorithm: arc #缓存算法
   use-hosts: true #查询系统Hosts
   default-nameserver: #默认 DNS, 用于解析 DNS 服务器 的域名，必须为 IP, 可为加密 DNS
     - 'https://1.12.12.12/dns-query'
     - 'https://[2400:3200::1]/dns-query'
-  enhanced-mode: fake-ip
+  enhanced-mode: redir-host
   fake-ip-range: 198.18.0.0/16
   fake-ip-filter: #fakeip 过滤，以下地址不会下发 fakeip 映射用于连接
     - '*'
@@ -139,25 +141,25 @@ pr: &pr
 u: &u 
   type: url-test
   use:
-    - 🛫 miaona
-    - 🛫 魔戒
-    - 🛫 极速云
-    - 🛫 顶级机场
-    - 🛫 飞鸟云
-    - 🛫 淘气兔
-  exclude-filter: "套餐|流量|群组|频道|官网|推荐使用|测试|电报" #排除满足关键词或正则表达式的节点
+    - 🛫 ge
+    - 🛫 jk
+    # - 🛫 极速云
+    # - 🛫 顶级机场
+    # - 🛫 飞鸟云
+    # - 🛫 淘气兔
+  # exclude-filter: "套餐|流量|群组|频道|官网|推荐使用|测试|电报" #排除满足关键词或正则表达式的节点
   exclude-type: "http" #排除指定类型的节点，不支持正则表达式，通过 | 分割
 
 proxy-providers:
 # 机场订阅
 # override 覆写节点内容；additional-prefix：为节点名称添加固定前缀；additional-suffix：为节点名称添加固定后缀
 
-  🛫 miaona: {<<: *p, url: "https://miaona.org/#/register?code=C3J67GSL", path: ./机场/可乐云.yaml, override: {additional-prefix: "可乐云 | "}}
-  🛫 魔戒: {<<: *p, url: "https://www.mojie.cyou/#/register?code=YjlCVXjA", path: ./机场/魔戒.yaml, override: {additional-prefix: "魔戒 | "}}
-  🛫 极速云: {<<: *p, url: "https://512.jsy.lol/#/register?code=KmIpamty", path: ./机场/极速云.yaml, override: {additional-prefix: "极速云 | "}}
-  🛫 顶级机场: {<<: *p, url: "https://xn--mes358a9urctx.com/#/register?code=wiPXjyYq", path: ./机场/顶级机场.yaml, override: {additional-prefix: "顶级机场 | "}}
-  🛫 飞鸟云: {<<: *p, url: "https://www.feiniaoyun.xyz/#/register?code=1gZX21aI", path: ./机场/飞鸟云.yaml, override: {additional-prefix: "飞鸟云 | "}}
-  🛫 淘气兔: {<<: *p, url: "https://vip.taoqitu.pro/index.html?register=rNh8X1zf", path: ./机场/淘气兔.yaml, override: {additional-prefix: "淘气兔 | "}}
+  🛫 ge: {<<: *p, url: "订阅链接1", path: ./provide/ge.yaml, override: {additional-prefix: "ge | "}}
+  🛫 jk: {<<: *p, url: "订阅链接2", path: ./provide/jk.yaml, override: {additional-prefix: "jk | "}}
+  # 🛫 极速云: {<<: *p, url: "https://512.jsy.lol/#/register?code=KmIpamty", path: ./provide/极速云.yaml, override: {additional-prefix: "极速云 | "}}
+  # 🛫 顶级机场: {<<: *p, url: "https://xn--mes358a9urctx.com/#/register?code=wiPXjyYq", path: ./provide/顶级机场.yaml, override: {additional-prefix: "顶级机场 | "}}
+  # 🛫 飞鸟云: {<<: *p, url: "https://www.feiniaoyun.xyz/#/register?code=1gZX21aI", path: ./provide/飞鸟云.yaml, override: {additional-prefix: "飞鸟云 | "}}
+  # 🛫 淘气兔: {<<: *p, url: "https://vip.taoqitu.pro/index.html?register=rNh8X1zf", path: ./provide/淘气兔.yaml, override: {additional-prefix: "淘气兔 | "}}
 
 proxy-groups: #代理组
 
