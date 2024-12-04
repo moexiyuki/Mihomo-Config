@@ -1,0 +1,282 @@
+#http-port: 9494
+# HTTP(S) 代理端口
+#socks-port: 9595
+# SOCKS5 代理端口
+mixed-port: 9696
+# HTTP(S) 和 SOCKS 代理混合端口
+redir-port: 9797
+# redirect 透明代理端口,仅能代理 TCP 流量,
+# 仅适用于 Linux 以及 macOS 使用
+tproxy-port: 9898
+# tproxy 透明代理端口,
+# 可以代理 TCP 以及 UDP 流量,仅限 linux 适用
+# (Android 设备属于 Linux 设备）
+mode: rule
+# rule 规则匹配;
+# global 全局代理(需要在GLOBAL策略组选择代理/策略);
+# direct 全局直连
+find-process-mode: strict
+# always 开启,强制匹配所有进程;
+# strict 默认,由 Clash 判断是否开启;
+# off 不匹配进程,推荐在路由器上使用此模式
+global-client-fingerprint: chrome
+# 全局客户端指纹,可选:
+# "chrome", "firefox", "safari", "iOS", "android",
+# "edge", "360"," qq", "random";
+# 若选择 "random", 则按 Cloudflare Radar 数据
+# 按概率生成一个现代浏览器指纹
+log-level: warning
+# 日志级别:
+# silent 静默,不输出;
+# error 仅输出发生错误至无法使用的日志;
+# warning 输出发生错误但不影响运行的日志,以及 error 级别内容;
+# info 输出一般运行的内容,以及 error 和 warning 级别的日志;
+# debug 尽可能的输出运行中所有的信息
+allow-lan: true
+# 允许局域网内其他设备经过 Clash 的代理端口访问互联网,可选值 tre/false
+bind-address: "*"
+# 绑定 IP,通过 LAN 访问一个/一些特定的 IP 地址,
+# "*" 绑定所有 IP 地址,默认值,不填写此项则绑定全部
+ipv6: false
+# 是否允许内核接受 IPv6 流量,可选值 true/false
+tcp-concurrent: true
+# tcp并发,允许同时处理多个tcp连接,可选值 true/false
+# keep-alive-interval: 60
+# TCP Keep Alive 间隔,单位分钟
+# 控制 Clash 发出 TCP Keep Alive 包的间隔,
+# 减少移动设备耗电问题的临时措施
+unified-delay: true
+# 统一延迟,更换延迟计算方式,去除握手等额外延迟,可选值 true/false
+# GEO文件配置 
+geodata-mode: true
+# GeoIP 使用的文件,可选 true 为.dat/ false 为.mmdb
+geosite-matcher: succinct
+# GeoSite 使用的匹配器实现,可选:
+# succinct：与规则集相同;
+# mph：来自 V2Ray,也是 Xray 中的“混合”
+geodata-loader: memconservative
+# GEO 文件加载模式:
+# standard: 标准加载器;
+# memconservative: 专为内存受限(小内存)设备优化的加载器(默认值).
+geo-auto-update: true
+# 自动更新 GEO 文件,可选 true/false
+geo-update-interval: 24
+# 更新间隔,单位：小时
+geox-url:
+# 自定义 GEO 文件下载地址
+  geoip: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
+  geosite: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
+  asn: "https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb"
+# 外部控制 (API)
+external-controller: 127.0.0.1:9090
+# 外部控制器,可以使用 RESTful API 来控制你的 Clash 内核;
+# API 监听地址,你可以将 127.0.0.1 修改为 0.0.0.0 来监听所有 IP.
+# 访问地址：http://127.0.0.1:9090
+### external-controller-tls: 127.0.0.1:9443
+# HTTPS-API 监听地址,需要配置 tls 部分证书和其私钥配置,
+# 使用 TLS 也必须填写 external-controller
+secret: meta
+# API 的访问密钥
+external-ui: "/data/adb/box/clash"
+#"./ui"
+# 外部用户界面路径,可以为绝对路径,或者 Clash 工作目录的相对路径
+external-ui-name: "dashboard"
+# 自定义外部用户界面名字
+external-ui-url: "https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip"
+# 自定义外部用户界面下载地址
+global-ua: clash.meta
+# 自定义外部资源下载时使用的UA,默认为 clash.meta
+# HOSTS
+# hosts:
+  # '*.clash.dev': 127.0.0.1
+  # 'alpha.clash.dev': '::1'
+  # test.com: [1.1.1.1, 2.2.2.2]
+  # baidu.com: google.com
+#订阅
+dy: &dy
+  type: http
+  interval: 86400
+  health-check: 
+    enable: true
+    url: "https://www.gstatic.com/generate_204"
+    interval: 300
+proxy-providers:
+  ge:
+    url: "订阅链接1"
+    <<: *dy
+    path: ./provide/ge.yaml
+    override:
+      additional-prefix: "ge |"
+
+  jk:
+    url: "订阅链接2"
+    <<: *dy
+    path: ./provide/jk.yaml
+    override:
+      additional-prefix: "jk |"
+# 缓存
+profile:
+  store-selected: true
+  store-fake-ip: true
+# TUN
+tun:
+  enable: false
+  stack: mixed
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+# DNS
+dns:
+  enable: true
+  prefer-h3: false
+  use-hosts: true
+  use-system-hosts: true
+  respect-rules: false
+  listen: 0.0.0.0:1053
+  ipv6: false
+  default-nameserver:
+    - 223.5.5.5
+  enhanced-mode: redir-host
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter-mode: blacklist
+  fake-ip-filter:
+    - '*.lan'
+  nameserver-policy:
+    '+.arpa': '10.0.0.1'
+    # 'rule-set:cn':
+    # - https://doh.pub/dns-query
+    # - https://dns.alidns.com/dns-query
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  proxy-server-nameserver:
+    - https://doh.pub/dns-query
+  direct-nameserver:
+    - 223.5.5.5
+    - 114.114.114.114
+  direct-nameserver-follow-policy: false
+  fallback:
+    - tls://8.8.4.4
+    - tls://1.1.1.1
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    geosite:
+      - gfw
+    ipcidr:
+      - 240.0.0.0/4
+    domain:
+      # 直接触发备用dns
+      - '+.google.com'
+      - '+.facebook.com'
+      - '+.youtube.com'
+# 锚点
+p: &p
+  type: select
+  proxies:
+  - 默认💮
+  - DIRECT
+  - REJECT
+  - 备用1🌝
+  - 备用2🌝
+  - 备用3🌝
+  - 备用4🌝
+  - 备用5🌝
+  - 备用6🌝
+  - 自动选择😋
+  - 负载均衡😤
+d: &d
+  type: select
+  # use:
+    # - ge
+    # - jk
+  include-all: true
+#策略组/代理组
+proxy-groups:
+  - name: 默认💮
+    type: select
+    proxies:
+      - DIRECT
+      - REJECT
+      - 备用1🌝
+      - 备用2🌝
+      - 备用3🌝
+      - 备用4🌝
+      - 备用5🌝
+      - 备用6🌝
+      - 自动选择😋
+      - 负载均衡😤
+  # 分流方案
+  - name: Google
+    <<: *p
+  - name: Telegram
+    <<: *p
+  - name: Twitter
+    <<: *p
+  - name: 哔哩哔哩
+    <<: *p
+  - name: 巴哈姆特
+    <<: *p
+  - name: YouTube
+    <<: *p
+  - name: NETFLIX
+    <<: *p
+  - name: Spotify
+    <<: *p
+  - name: Github
+    <<: *p
+  - name: 国内
+    <<: *p
+  - name: 漏网之鱼
+    <<: *p
+   #---
+  - name: 备用1🌝
+    <<: *d
+  - name: 备用2🌝
+    <<: *d
+  - name: 备用3🌝
+    <<: *d
+  - name: 备用4🌝
+    <<: *d
+  - name: 备用5🌝
+    <<: *d
+  - name: 备用6🌝
+    <<: *d
+  - name: 负载均衡😤
+    type: load-balance
+    include-all: true
+    url: 'https://www.gstatic.com/generate_204'
+    interval: 300
+
+  - name: 自动选择😋
+    type: url-test
+    include-all: true
+    tolerance: 10
+    
+#路由规则
+rules:
+  - GEOIP,lan,DIRECT,no-resolve
+  
+  - GEOSITE,github,Github
+  - GEOSITE,twitter,Twitter
+  - GEOSITE,youtube,YouTube
+  - GEOSITE,google,Google
+  - GEOSITE,telegram,Telegram
+  - GEOSITE,netflix,NETFLIX
+  - GEOSITE,bilibili,哔哩哔哩
+  - GEOSITE,bahamut,巴哈姆特
+  - GEOSITE,spotify,Spotify
+  - GEOSITE,CN,国内
+  - GEOSITE,geolocation-!cn,漏网之鱼
+  
+  - GEOIP,google,Google
+  - GEOIP,netflix,NETFLIX
+  - GEOIP,telegram,Telegram
+  - GEOIP,twitter,Twitter
+  - GEOIP,CN,国内
+  # final 疏而不漏
+  - MATCH,漏网之鱼
