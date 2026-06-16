@@ -1,0 +1,360 @@
+
+mixed-port: 9696
+redir-port: 9797
+tproxy-port: 9898
+
+mode: rule
+find-process-mode: strict
+global-client-fingerprint: chrome
+log-level: warning
+allow-lan: true
+bind-address: "*"
+# authentication:
+  # - "user1:pass1"
+  # - "user2:pass2"
+  # http(s)/socks/mixed代理的用户验证
+ipv6: false
+tcp-concurrent: true
+keep-alive-interval: 300
+unified-delay: true
+
+geodata-mode: true
+geosite-matcher: succinct
+geodata-loader: standard
+geo-auto-update: true
+geo-update-interval: 24
+geox-url:
+  geoip: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat"
+  geosite: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb"
+  asn: "https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb"
+
+external-ui-name: "zashboard"
+external-ui-url: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip"
+external-controller: 127.0.0.1:9090
+secret: meta
+
+profile:
+  store-selected: true
+  store-fake-ip: false
+
+代理提供者: &pp
+  type: http
+  interval: 86400
+  # 每24小时更新
+  health-check:
+    enable: true
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+
+规则提供者: &rp
+  type: http
+  behavior: classical
+  format: yaml
+  interval: 86400
+
+proxy-providers:
+
+  jkcloud:
+    <<: *pp
+    url: "订阅链接"
+    override:
+      additional-prefix: "jkcloud | "
+    path: ./providers/jkcloud.yaml
+
+  liltpupu:
+    <<: *pp
+    url: "订阅链接"
+    override:
+      additional-prefix: "liltpupu | "
+    path: ./providers/liltpupu.yaml
+
+  最萌的云:
+    <<: *pp
+    url: "订阅链接"
+    override:
+      additional-prefix: "最萌的云 | "
+    path: ./providers/最萌的云.yaml
+
+dns:
+  enable: true
+  ipv6: false
+
+  enhanced-mode: fake-ip
+
+  cache-algorithm: arc
+
+  fake-ip-range: 198.18.0.1/16
+
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - localhost
+    - '*.mtalk.google.com'
+
+  default-nameserver:
+    - 223.5.5.5
+    - 114.114.114.114
+
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  direct-nameserver:
+    - 223.5.5.5
+    - 114.114.114.114
+
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+
+  nameserver-policy:
+    'geosite:cn':
+      - https://dns.alidns.com/dns-query
+
+  fallback:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+
+  fallback-filter:
+    geoip: true
+    geosite:
+      - gfw
+
+rule-providers:
+
+  # 直连规则:
+    # <<: *rp
+    # path: ./rule_providers/直连规则.yaml
+    # url: "https://raw.githubusercontent.com/moexiyuki/mihomo-config-hub/1e12c0b892f3946d011031946939d17ddfe06c12/rule_direct.yaml"
+
+  秋风广告规则:
+    <<: *rp
+    path: ./rule_providers/秋风广告规则.yaml
+    url: "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/refs/heads/main/Filters/AWAvenue-Ads-Rule-Clash-Classical.yaml"
+
+手动选择: &proxy
+  type: select
+  include-all: true
+
+自动选择: &auto
+  interval: 300
+  # 健康检测间隔（秒）
+  url: https://www.gstatic.com/generate_204
+  hidden: true
+
+item: &item
+  type: select
+  proxies:
+    - 🌐 智能代理
+    - 默认🌺
+    - 备用❤️
+    - 备用💛
+    - 专线
+    - 台湾
+    - 香港
+    - 负载均衡
+    - 故障排除
+    - DIRECT
+    - REJECT
+    # - 自动选择
+
+smart: &smart
+  use:
+    - jkcloud
+    - liltpupu
+    - 最萌的云
+  type: smart
+  hidden: true
+  url: https://www.gstatic.com/generate_204
+  interval: 600
+  tolerance: 80
+
+proxy-groups:
+
+  - name: 默认🌺
+    type: select
+    proxies:
+      - 🌐 智能代理
+      - 备用❤️
+      - 备用💛
+      - 专线
+      - 台湾
+      - 香港
+      - 负载均衡
+      - 故障排除
+      - DIRECT
+      - REJECT
+      # - 自动选择
+
+  - name: 备用❤️
+    <<: *proxy
+  - name: 备用💛
+    <<: *proxy
+  - name: 专线
+    <<: *proxy
+    filter: '专线'
+  - name: 台湾
+    <<: *proxy
+    filter: '(台湾|Taiwan|TW|TPE)'
+  - name: 香港
+    <<: *proxy
+    filter: '(香港|Hong Kong|HongKong|HK|HKG)'
+
+  - name: 故障排除
+    type: fallback
+    <<: *auto
+    use:
+      - jkcloud
+      # - liltpupu
+      - 最萌的云
+    lazy: false
+
+  - name: 负载均衡
+    type: load-balance
+    <<: *auto
+    use:
+      - jkcloud
+      - liltpupu
+      # - 最萌的云
+    lazy: true
+    strategy: round-robin # consistent-hashing
+    # 浏览网页或下载：round-robin
+    # 游戏或登录敏感：consistent-hashing
+
+  # - name: 自动选择
+    # type: url-test
+    # <<: *auto
+    # # include-all: true
+    # use:
+      # - zmdy
+      # - jk
+    # tolerance: 200 # RTT 容忍值（毫秒）
+
+  # 分流
+  - name: Steam
+    <<: *item
+  - name: ChatGpt
+    <<: *item
+  - name: Google
+    <<: *item
+  - name: Telegram
+    <<: *item
+  - name: Twitter
+    <<: *item
+  - name: YouTube
+    <<: *item
+  - name: Github
+    <<: *item
+  - name: 国内
+    <<: *item
+    # type: select
+    # proxies:
+      # - DIRECT
+    # hidden: true
+
+  # 智能选择
+  - name: ⚡ 延迟优先
+    <<: *smart
+    strategy:
+      - latency
+      - availability
+  - name: 🚀 速度优先
+    <<: *smart
+    strategy:
+      - speed
+      - availability
+  - name: 🎯 均衡模式
+    <<: *smart
+    strategy:
+      - latency
+      - speed
+      - availability
+      - load
+
+  - name: 🌐 智能代理
+    type: select
+    proxies:
+      - ⚡ 延迟优先
+      - 🚀 速度优先
+      - 🎯 均衡模式
+      - DIRECT
+      - REJECT
+
+rules:
+  # 直连局域网流量
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - GEOIP,private,DIRECT,no-resolve
+
+  - IP-CIDR,1.1.1.1/32,默认🌺,no-resolve
+  - IP-CIDR,8.8.8.8/32,默认🌺,no-resolve
+  # FCM
+  - GEOSITE,googlefcm,DIRECT
+  # 广告过滤
+  - RULE-SET,秋风广告规则,REJECT
+  # - RULE-SET,直连规则,DIRECT
+
+  # 🎮 Steam 主域名（需要代理）
+  - DOMAIN,store.steampowered.com,Steam
+  - DOMAIN,api.steampowered.com,Steam
+  - DOMAIN,help.steampowered.com,Steam
+  - DOMAIN,partner.steampowered.com,Steam
+  - DOMAIN,checkout.steampowered.com,Steam
+  - DOMAIN,community.steamcommunity.com,Steam
+  - DOMAIN,steamcommunity.com,Steam
+  - DOMAIN,steampowered.com,Steam
+  - DOMAIN,steam-chat.com,Steam
+  - DOMAIN,steamusercontent.com,Steam
+  - DOMAIN-SUFFIX,steamstatic.com,Steam
+  - DOMAIN-SUFFIX,steamgames.com,Steam
+  - DOMAIN-SUFFIX,steamcontent.com,Steam
+  - DOMAIN-SUFFIX,steamserver.net,Steam
+
+  # 📦 游戏下载 CDN（直连）
+  # Steam 内容服务器（常见直连节点）
+  - DOMAIN-SUFFIX,cm.steampowered.com,DIRECT
+  - DOMAIN-SUFFIX,steamcontent.com,DIRECT
+  - DOMAIN-SUFFIX,steamcdn-a.akamaihd.net,DIRECT
+  - DOMAIN-SUFFIX,steam.apac.qtlglb.com,DIRECT
+  - DOMAIN-SUFFIX,steam.cdn.on.net,DIRECT
+  - DOMAIN-SUFFIX,steam.naeu.qtlglb.com,DIRECT
+  - DOMAIN-SUFFIX,steam.ix.asn.au,DIRECT
+  - DOMAIN-SUFFIX,cdn.steampipe.steamcontent.com,DIRECT
+  - DOMAIN-SUFFIX,hsar.steampowered.com.edgesuite.net,DIRECT
+  - DOMAIN-SUFFIX,edgecast.steamstatic.com,DIRECT
+  - DOMAIN-SUFFIX,fastly.steamstatic.com,DIRECT
+
+  # 🧱 常见下载 CDN 直连（国内节点）
+  - DOMAIN-SUFFIX,steamserver.net,DIRECT
+  - DOMAIN-SUFFIX,cm.steampowered.com,DIRECT
+  - DOMAIN-SUFFIX,steamchina.com,DIRECT
+
+  # 📡 备用匹配
+  - GEOSITE,steam,Steam
+
+  # 国外
+  - GEOSITE,openai,ChatGpt
+  - GEOSITE,github,Github
+  - GEOSITE,twitter,Twitter
+  - GEOSITE,youtube,YouTube
+  - GEOSITE,google,Google
+  - GEOSITE,telegram,Telegram
+  - GEOSITE,cloudflare,默认🌺
+  # b站
+  # - GEOSITE,bilibili,DIRECT
+
+  # GEOIP 防止纯 IP 流量漏网
+  - GEOIP,twitter,Twitter,no-resolve
+  - GEOIP,google,Google,no-resolve
+  - GEOIP,telegram,Telegram,no-resolve
+  - GEOIP,cloudflare,默认🌺,no-resolve
+  # 国内
+  - DOMAIN-SUFFIX,cn,国内
+  # - DOMAIN-KEYWORD,-cn,国内
+  - GEOSITE,geolocation-cn,国内
+  - GEOIP,CN,国内,no-resolve
+  # 兜底
+  # - GEOSITE,geolocation-!cn,默认🌺
+  - MATCH,默认🌺
