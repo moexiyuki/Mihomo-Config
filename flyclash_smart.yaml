@@ -1,0 +1,312 @@
+ipv6: false
+mixed-port: 9696
+allow-lan: true
+bind-address: "*"
+authentication:
+  - "user:pass"
+skip-auth-prefixes:
+  - 127.0.0.1/8
+  - ::1/128
+mode: rule
+log-level: warning
+find-process-mode: strict
+tcp-concurrent: true
+unified-delay: true
+keep-alive-interval: 180
+external-controller: 0.0.0.0:9090
+secret: meta
+external-ui-name: "zashboard"
+external-ui-url: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip"
+geodata-mode: true
+geodata-loader: standard
+geosite-matcher: mph # succinct
+
+profile:
+  store-selected: true
+
+代理提供者: &pp
+  type: http
+  interval: 86400
+  health-check:
+    enable: true
+    url: https://www.gstatic.com/generate_204
+    interval: 600
+
+proxy-providers:
+
+  jkcloud:
+    <<: *pp
+    url: "订阅链接"
+    override:
+      additional-prefix: "jkcloud | "
+    path: ./providers/jkcloud.yaml
+
+  liltpupu:
+    <<: *pp
+    url: "订阅链接"
+    override:
+      additional-prefix: "liltpupu | "
+    path: ./providers/liltpupu.yaml
+
+  最萌的云:
+    <<: *pp
+    url: "订阅链接"
+    override:
+      additional-prefix: "最萌的云 | "
+    path: ./providers/最萌的云.yaml
+
+规则提供者: &rp
+  type: http
+  interval: 86400
+  behavior: classical
+  format: yaml
+
+rule-providers:
+
+  # 直连规则:
+    # <<: *rp
+    # path: ./rule_providers/直连规则.yaml
+    # url: "https://raw.githubusercontent.com/moexiyuki/mihomo-config-hub/1e12c0b892f3946d011031946939d17ddfe06c12/rule_direct.yaml"
+
+  秋风广告规则:
+    <<: *rp
+    path: ./rule_providers/秋风广告规则.yaml
+    url: "https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/refs/heads/main/Filters/AWAvenue-Ads-Rule-Clash-Classical.yaml"
+
+手动选择: &proxy
+  type: select
+  # include-all: true
+  use:
+    - jkcloud
+    - liltpupu
+    - 最萌的云
+
+自动选择: &auto
+  # include-all: true
+  use:
+    - jkcloud
+    - liltpupu
+    - 最萌的云
+  lazy: true
+  interval: 600
+  url: https://www.gstatic.com/generate_204
+  hidden: true
+
+智能选择: &smart
+  # include-all: true
+  use:
+    - jkcloud
+    - liltpupu
+    - 最萌的云
+  type: smart
+  lazy: true
+  interval: 300
+  url: https://www.gstatic.com/generate_204
+  # hidden: true
+  tolerance: 60
+  uselightgbm: true
+
+lgbm-auto-update: true
+lgbm-update-interval: 168
+
+选项: &item
+  type: select
+  proxies:
+    - 🌐 智能代理
+    - ⚡ 延迟优先
+    - 🚀 速度优先
+    - 🎯 均衡模式
+    - 默认🌺
+    - 备用🌸
+    - 备用🌼
+    - 专线🛰
+    - 台湾
+    - 香港
+    - 故障排除
+    - DIRECT
+    - REJECT
+    # - 负载均衡
+    # - 自动选择
+
+proxy-groups:
+
+  - name: 默认🌺
+    type: select
+    proxies:
+      - 🌐 智能代理
+      - ⚡ 延迟优先
+      - 🚀 速度优先
+      - 🎯 均衡模式
+      - 备用🌸
+      - 备用🌼
+      - 专线🛰
+      - 台湾
+      - 香港
+      - 故障排除
+      - DIRECT
+      - REJECT
+      # - 负载均衡
+      # - 自动选择
+  - name: 备用🌸
+    <<: *proxy
+  - name: 备用🌼
+    <<: *proxy
+  - name: 专线🛰
+    <<: *proxy
+    filter: "(?i)(专线|iepl|iplc|优化)"
+  - name: 台湾
+    <<: *proxy
+    filter: "(?i)湾|tw|taiwan|tpe"
+  - name: 香港
+    <<: *proxy
+    filter: "(?i)港|hk|hongkong|hong kong"
+
+  - name: Steam
+    <<: *item
+  - name: ChatGpt
+    <<: *item
+  - name: Google
+    <<: *item
+  - name: Telegram
+    <<: *item
+  - name: Twitter
+    <<: *item
+  - name: YouTube
+    <<: *item
+  - name: Github
+    <<: *item
+  - name: 国内
+    <<: *item
+    # type: select
+    # proxies:
+      # - DIRECT
+    # hidden: true
+  # 智能选择
+  - name: ⚡ 延迟优先
+    <<: *smart
+    strategy:
+      - latency
+      - availability
+  - name: 🚀 速度优先
+    <<: *smart
+    strategy:
+      - speed
+      - availability
+  - name: 🎯 均衡模式
+    <<: *smart
+    strategy:
+      - latency
+      - speed
+      - availability
+      - load
+  - name: 🌐 智能代理
+    type: select
+    proxies:
+      - ⚡ 延迟优先
+      - 🚀 速度优先
+      - 🎯 均衡模式
+      - DIRECT
+      - REJECT
+
+  - name: 故障排除
+    type: fallback
+    <<: *auto
+    timeout: 5000
+    max-failed-times: 3
+
+  # - name: 负载均衡
+    # type: load-balance
+    # <<: *auto
+    # strategy: round-robin # consistent-hashing
+    # 浏览网页或下载：round-robin
+    # 游戏或登录敏感：consistent-hashing
+
+  # - name: 自动选择
+    # type: url-test
+    # <<: *auto
+    # tolerance: 200 # RTT 容忍值（毫秒）
+
+dns:
+  enable: true
+  ipv6: false
+  listen: 127.0.0.1:1053
+  enhanced-mode: redir-host
+  cache-algorithm: arc
+  cache-max-size: 8192
+  respect-rules: true
+
+  default-nameserver:
+    - 223.5.5.5
+    - 114.114.114.114
+
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+    # - 223.5.5.5
+    # - 114.114.114.114
+
+  direct-nameserver:
+    - 223.5.5.5
+    - 114.114.114.114
+
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+    - https://dns.google/dns-query
+    - https://cloudflare-dns.com/dns-query
+
+  nameserver-policy:
+    'geosite:gfw':
+      - https://cloudflare-dns.com/dns-query
+      - https://dns.google/dns-query
+    '+.taobao.com': '223.5.5.5'
+    '+.baidu.com': '114.114.114.114'
+    'geosite:cn': 
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
+
+  fallback:
+    - tls://8.8.4.4
+    - tls://1.1.1.1
+    # - 208.67.222.222
+    # - https://dns.google/dns-query
+    # - https://cloudflare-dns.com/dns-query
+
+hosts:
+  '*.mcdn.bilivideo.com': 127.0.0.1
+  '*.mcdn.bilivideo.cn': 127.0.0.1
+  '*.szbdyd.com': 127.0.0.1
+
+rules:
+  - GEOIP,private,DIRECT,no-resolve
+
+  - IP-CIDR,1.1.1.1/32,⚡ 延迟优先,no-resolve
+  - IP-CIDR,8.8.8.8/32,⚡ 延迟优先,no-resolve
+
+  - GEOSITE,googlefcm,DIRECT
+
+  - RULE-SET,秋风广告规则,REJECT
+  - GEOSITE,tracker,REJECT
+
+  - GEOSITE,steam@cn,DIRECT
+  - GEOSITE,steam,Steam
+
+  - GEOSITE,openai,ChatGpt
+  - GEOSITE,github,Github
+  - GEOSITE,twitter,Twitter
+  - GEOSITE,youtube,YouTube
+  - GEOSITE,google-cn,Google # Google CN 不走代理会导致香港等地区节点 Play Store 异常
+  - GEOSITE,google,Google
+  - GEOSITE,telegram,Telegram
+  - GEOSITE,cloudflare,⚡ 延迟优先
+
+  - GEOIP,cloudflare,⚡ 延迟优先,no-resolve
+  - GEOIP,telegram,Telegram,no-resolve
+  - GEOIP,google,Google,no-resolve
+  - GEOIP,twitter,Twitter,no-resolve
+
+  - DOMAIN-SUFFIX,cn,国内
+  - GEOSITE,geolocation-cn,国内
+  - GEOIP,CN,国内,no-resolve
+
+  - MATCH,默认🌺
